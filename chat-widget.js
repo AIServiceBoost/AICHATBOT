@@ -71,15 +71,22 @@
             #ai-chat-widget.open #ai-chat-window{opacity:1;visibility:visible;transform:translateY(0) scale(1)}
             
             /* Header */
-            #ai-chat-header{background:linear-gradient(135deg,var(--c-primary) 0%,var(--c-light) 100%);padding:28px 24px;color:#fff;position:relative;overflow:hidden}
+            #ai-chat-header{background:linear-gradient(135deg,var(--c-primary) 0%,var(--c-light) 100%);padding:20px 24px;color:#fff;position:relative;overflow:hidden}
             #ai-chat-header::before{content:'';position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.12) 0%,transparent 60%);pointer-events:none}
             #ai-chat-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
-            .ai-header-content{display:flex;align-items:center;gap:16px;position:relative;z-index:1}
-            .ai-header-avatar{width:52px;height:52px;background:rgba(255,255,255,.2);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);box-shadow:0 4px 12px rgba(0,0,0,.1)}
-            .ai-header-info h3{margin:0 0 4px 0;font-size:18px;font-weight:700;letter-spacing:-.3px;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+            .ai-header-content{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+            .ai-header-avatar{width:48px;height:48px;background:rgba(255,255,255,.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+            .ai-header-info{flex:1}
+            .ai-header-info h3{margin:0 0 2px 0;font-size:17px;font-weight:700;letter-spacing:-.3px;text-shadow:0 1px 2px rgba(0,0,0,.1)}
             .ai-header-status{display:flex;align-items:center;gap:8px;font-size:13px;opacity:.95}
             .ai-status-dot{width:8px;height:8px;background:#4ade80;border-radius:50%;animation:ai-statusPulse 2s infinite;box-shadow:0 0 8px rgba(74,222,128,.6)}
             @keyframes ai-statusPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.85)}}
+            
+            /* Close Button in Header */
+            .ai-header-close{width:36px;height:36px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;backdrop-filter:blur(8px)}
+            .ai-header-close:hover{background:rgba(255,255,255,.25);transform:scale(1.05)}
+            .ai-header-close:active{transform:scale(.95)}
+            .ai-header-close svg{width:18px;height:18px;fill:#fff}
             
             /* Messages */
             #ai-chat-messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(180deg,#f8f9fc 0%,#fff 100%);scroll-behavior:smooth}
@@ -87,18 +94,29 @@
             #ai-chat-messages::-webkit-scrollbar-track{background:transparent}
             #ai-chat-messages::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
             #ai-chat-messages::-webkit-scrollbar-thumb:hover{background:#cbd5e1}
-            .ai-msg-wrap{display:flex;flex-direction:column;gap:6px;animation:ai-msgIn .4s cubic-bezier(.175,.885,.32,1.275)}
-            @keyframes ai-msgIn{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+            
+            /* Message Animation - Bounce + Fade */
+            .ai-msg-wrap{display:flex;flex-direction:column;gap:6px;opacity:0;transform:translateY(20px) scale(0.95);animation:ai-msgBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards}
+            @keyframes ai-msgBounceIn{
+                0%{opacity:0;transform:translateY(30px) scale(0.9)}
+                50%{opacity:1;transform:translateY(-5px) scale(1.02)}
+                70%{transform:translateY(3px) scale(0.99)}
+                100%{opacity:1;transform:translateY(0) scale(1)}
+            }
             .ai-msg-wrap.user{align-items:flex-end}
             .ai-msg-wrap.bot{align-items:flex-start}
-            .ai-msg-bubble{max-width:85%;padding:16px 20px;font-size:14px;line-height:1.65;word-wrap:break-word}
+            .ai-msg-bubble{max-width:85%;padding:16px 20px;font-size:14px;line-height:1.65;word-wrap:break-word;transition:transform 0.2s ease, box-shadow 0.2s ease}
+            .ai-msg-bubble:hover{transform:scale(1.01)}
             .ai-msg-wrap.user .ai-msg-bubble{background:linear-gradient(135deg,var(--c-primary),var(--c-light));color:#fff;border-radius:20px 20px 6px 20px;box-shadow:0 4px 16px ${hexToRgba(CONFIG.primaryColor,0.25)}}
+            .ai-msg-wrap.user .ai-msg-bubble:hover{box-shadow:0 6px 20px ${hexToRgba(CONFIG.primaryColor,0.35)}}
             .ai-msg-wrap.bot .ai-msg-bubble{background:#fff;color:#1a1a2e;border-radius:20px 20px 20px 6px;box-shadow:0 2px 12px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)}
+            .ai-msg-wrap.bot .ai-msg-bubble:hover{box-shadow:0 4px 16px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.04)}
             .ai-msg-wrap.error .ai-msg-bubble{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-            .ai-msg-time{font-size:11px;color:#94a3b8;padding:0 12px}
+            .ai-msg-time{font-size:11px;color:#94a3b8;padding:0 12px;opacity:0;animation:ai-fadeIn 0.3s ease 0.3s forwards}
+            @keyframes ai-fadeIn{to{opacity:1}}
             
             /* Typing */
-            .ai-typing{display:flex;align-items:flex-end;gap:10px;animation:ai-msgIn .4s}
+            .ai-typing{display:flex;align-items:flex-end;gap:10px;opacity:0;animation:ai-msgBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards}
             .ai-typing-avatar{width:36px;height:36px;background:linear-gradient(135deg,var(--c-primary),var(--c-light));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px ${hexToRgba(CONFIG.primaryColor,0.25)}}
             .ai-typing-bubble{background:#fff;padding:18px 22px;border-radius:20px 20px 20px 6px;box-shadow:0 2px 12px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04);display:flex;gap:6px;align-items:center}
             .ai-typing-dot{width:8px;height:8px;background:var(--c-primary);border-radius:50%;animation:ai-wave 1.4s infinite}
@@ -110,13 +128,14 @@
             
             /* Input Area */
             #ai-chat-input-area{padding:20px 24px;background:#fff;border-top:1px solid #f1f5f9;display:flex;gap:12px;align-items:flex-end}
-            #ai-chat-input{flex:1;padding:14px 20px;border:2px solid #e2e8f0;border-radius:18px;font-size:14px;outline:none;transition:all .3s;resize:none;font-family:inherit;line-height:1.5;max-height:120px;background:#f8f9fc}
+            #ai-chat-input{flex:1;padding:14px 20px;border:2px solid #e2e8f0;border-radius:18px;font-size:14px;outline:none;resize:none;font-family:inherit;line-height:1.5;max-height:120px;min-height:48px;background:#f8f9fc;transition:border-color 0.3s ease,box-shadow 0.3s ease,background 0.3s ease,height 0.15s ease}
             #ai-chat-input:focus{border-color:var(--c-primary);box-shadow:0 0 0 4px ${hexToRgba(CONFIG.primaryColor,0.1)};background:#fff}
             #ai-chat-input::placeholder{color:#94a3b8}
-            #ai-chat-send{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--c-primary),var(--c-light));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;flex-shrink:0;box-shadow:0 4px 12px ${hexToRgba(CONFIG.primaryColor,0.3)}}
+            #ai-chat-send{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--c-primary),var(--c-light));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;flex-shrink:0;box-shadow:0 4px 12px ${hexToRgba(CONFIG.primaryColor,0.3)}}
             #ai-chat-send:hover:not(:disabled){transform:scale(1.05);box-shadow:0 6px 20px ${hexToRgba(CONFIG.primaryColor,0.4)}}
+            #ai-chat-send:active:not(:disabled){transform:scale(0.95)}
             #ai-chat-send:disabled{background:#e2e8f0;cursor:not-allowed;box-shadow:none}
-            #ai-chat-send svg{width:22px;height:22px;fill:#fff;transition:transform .3s}
+            #ai-chat-send svg{width:22px;height:22px;fill:#fff;transition:transform .2s ease}
             #ai-chat-send:hover:not(:disabled) svg{transform:translateX(2px)}
             
             /* Footer */
@@ -142,6 +161,9 @@
                             <h3>${CONFIG.botName}</h3>
                             <div class="ai-header-status"><span class="ai-status-dot"></span><span>Online</span></div>
                         </div>
+                        <button class="ai-header-close" title="Close chat">
+                            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        </button>
                     </div>
                 </div>
                 <div id="ai-chat-messages"></div>
@@ -168,20 +190,31 @@
 
     function initChat(widget) {
         const toggle = widget.querySelector('#ai-chat-toggle');
+        const headerClose = widget.querySelector('.ai-header-close');
         const input = widget.querySelector('#ai-chat-input');
         const sendBtn = widget.querySelector('#ai-chat-send');
         const messages = widget.querySelector('#ai-chat-messages');
         const popupBubble = widget.querySelector('.ai-popup-bubble');
         const closePopup = widget.querySelector('.close-popup');
 
+        function closeChat() {
+            isOpen = false;
+            widget.classList.remove('open');
+        }
+
+        function openChat() {
+            isOpen = true;
+            widget.classList.add('open');
+            popupBubble.classList.remove('show');
+            setTimeout(() => input.focus(), 300);
+        }
+
         toggle.addEventListener('click', () => {
-            isOpen = !isOpen;
-            widget.classList.toggle('open', isOpen);
-            if (isOpen) {
-                setTimeout(() => input.focus(), 300);
-                popupBubble.classList.remove('show');
-            }
+            if (isOpen) closeChat();
+            else openChat();
         });
+
+        headerClose.addEventListener('click', closeChat);
 
         closePopup.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -195,16 +228,17 @@
             }
         }, CONFIG.popupDelay);
 
-        popupBubble.addEventListener('click', () => {
-            popupBubble.classList.remove('show');
-            isOpen = true;
-            widget.classList.add('open');
-            setTimeout(() => input.focus(), 300);
-        });
+        popupBubble.addEventListener('click', openChat);
 
         sendBtn.addEventListener('click', sendMessage);
         input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-        input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; });
+        
+        // Smooth textarea resize
+        input.addEventListener('input', () => {
+            input.style.height = 'auto';
+            const newHeight = Math.min(input.scrollHeight, 120);
+            input.style.height = newHeight + 'px';
+        });
 
         setTimeout(() => addMessage(CONFIG.welcomeMessage, 'bot'), 500);
 
@@ -234,7 +268,10 @@
                 await sleep(CONFIG.streamingSpeed);
             }
             bubble.classList.remove('ai-streaming');
-            wrap.innerHTML += `<div class="ai-msg-time">${formatTime(new Date())}</div>`;
+            const time = document.createElement('div');
+            time.className = 'ai-msg-time';
+            time.textContent = formatTime(new Date());
+            wrap.appendChild(time);
             return wrap;
         }
 
