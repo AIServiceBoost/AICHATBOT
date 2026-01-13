@@ -4,17 +4,20 @@
     const scriptTag = document.currentScript;
     const CONFIG = {
         webhookUrl: scriptTag?.getAttribute('data-webhook') || '',
-        primaryColor: scriptTag?.getAttribute('data-color') || '#6c5ce7',
-        botName: scriptTag?.getAttribute('data-name') || 'AI Asistent',
+        primaryColor: scriptTag?.getAttribute('data-color') || '#ff6d37',
+        botName: scriptTag?.getAttribute('data-name') || 'AI Assistant',
         botAvatar: scriptTag?.getAttribute('data-avatar') || '🤖',
-        welcomeMessage: scriptTag?.getAttribute('data-welcome') || 'Ahoj! 👋 Jak vám mohu pomoci?',
+        welcomeMessage: scriptTag?.getAttribute('data-welcome') || 'Hi! 👋 How can I help you today?',
         position: scriptTag?.getAttribute('data-position') || 'right',
+        popupDelay: parseInt(scriptTag?.getAttribute('data-popup-delay')) || 7000,
+        popupMessage: scriptTag?.getAttribute('data-popup-message') || 'Need help?',
         streamingSpeed: 20,
     };
 
     const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     let isOpen = false;
     let isProcessing = false;
+    let popupShown = false;
 
     // Helpers
     function hexToRgba(hex, alpha) {
@@ -34,25 +37,34 @@
     }
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-    function formatTime(d) { return d.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }); }
+    function formatTime(d) { return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }); }
 
     // Inject CSS
     function injectStyles() {
         const style = document.createElement('style');
         style.textContent = `
             #ai-chat-widget{--c-primary:${CONFIG.primaryColor};--c-light:${adjustColor(CONFIG.primaryColor,20)};--c-dark:${adjustColor(CONFIG.primaryColor,-15)};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;position:fixed;bottom:24px;${CONFIG.position}:24px;z-index:99999}
-            #ai-chat-widget *{box-sizing:border-box}
+            #ai-chat-widget *{box-sizing:border-box;margin:0;padding:0}
             #ai-chat-toggle{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--c-primary),var(--c-light));border:none;cursor:pointer;box-shadow:0 8px 32px ${hexToRgba(CONFIG.primaryColor,0.4)};display:flex;align-items:center;justify-content:center;transition:all .4s cubic-bezier(.175,.885,.32,1.275);position:relative;overflow:hidden}
             #ai-chat-toggle:hover{transform:scale(1.1);box-shadow:0 12px 40px ${hexToRgba(CONFIG.primaryColor,0.5)}}
             #ai-chat-toggle::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.2),transparent 50%);border-radius:50%}
-            .ai-toggle-icon{width:28px;height:28px;position:relative}
-            .ai-toggle-icon svg{width:28px;height:28px;fill:#fff;position:absolute;transition:all .3s ease}
-            .ai-toggle-icon .icon-chat{opacity:1;transform:scale(1)}
-            .ai-toggle-icon .icon-close{opacity:0;transform:scale(.5) rotate(-90deg)}
-            #ai-chat-widget.open .icon-chat{opacity:0;transform:scale(.5) rotate(90deg)}
-            #ai-chat-widget.open .icon-close{opacity:1;transform:scale(1) rotate(0)}
+            .ai-toggle-icon{width:28px;height:28px;position:relative;display:flex;align-items:center;justify-content:center}
+            .ai-toggle-icon svg{width:28px;height:28px;fill:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:all .3s ease}
+            .ai-toggle-icon .icon-chat{opacity:1;transform:translate(-50%,-50%) scale(1)}
+            .ai-toggle-icon .icon-close{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(-90deg)}
+            #ai-chat-widget.open .icon-chat{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(90deg)}
+            #ai-chat-widget.open .icon-close{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
             @keyframes ai-pulse{0%,100%{box-shadow:0 8px 32px ${hexToRgba(CONFIG.primaryColor,0.4)}}50%{box-shadow:0 8px 32px ${hexToRgba(CONFIG.primaryColor,0.4)},0 0 0 12px ${hexToRgba(CONFIG.primaryColor,0)}}}
             #ai-chat-widget:not(.open) #ai-chat-toggle{animation:ai-pulse 3s ease-in-out infinite}
+            #ai-chat-widget.open #ai-chat-toggle{animation:none}
+            
+            /* Popup bubble */
+            .ai-popup-bubble{position:absolute;bottom:72px;${CONFIG.position}:0;background:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);font-size:14px;font-weight:500;color:#1a1a2e;white-space:nowrap;opacity:0;transform:translateY(10px) scale(.9);transition:all .4s cubic-bezier(.175,.885,.32,1.275);pointer-events:none}
+            .ai-popup-bubble::after{content:'';position:absolute;bottom:-8px;${CONFIG.position}:24px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff}
+            .ai-popup-bubble.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+            .ai-popup-bubble .close-popup{position:absolute;top:-8px;right:-8px;width:20px;height:20px;background:var(--c-primary);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;line-height:1}
+            #ai-chat-widget.open .ai-popup-bubble{opacity:0;transform:translateY(10px) scale(.9);pointer-events:none}
+
             #ai-chat-window{position:absolute;bottom:80px;${CONFIG.position}:0;width:400px;height:600px;background:#fff;border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden;opacity:0;visibility:hidden;transform:translateY(20px) scale(.9);transform-origin:bottom ${CONFIG.position};transition:all .4s cubic-bezier(.175,.885,.32,1.275)}
             #ai-chat-widget.open #ai-chat-window{opacity:1;visibility:visible;transform:translateY(0) scale(1)}
             #ai-chat-header{background:linear-gradient(135deg,var(--c-primary),var(--c-light));padding:24px;color:#fff;position:relative;overflow:hidden}
@@ -93,9 +105,10 @@
             #ai-chat-send:disabled{background:#e2e8f0;cursor:not-allowed}
             #ai-chat-send svg{width:22px;height:22px;fill:#fff;transition:transform .3s}
             #ai-chat-send:hover:not(:disabled) svg{transform:translateX(2px)}
-            .ai-powered{text-align:center;padding:8px;font-size:11px;color:#94a3b8;background:#f8f9fc}
-            .ai-powered a{color:var(--c-primary);text-decoration:none}
-            @media(max-width:480px){#ai-chat-widget{bottom:16px;${CONFIG.position}:16px}#ai-chat-window{width:calc(100vw - 32px);height:calc(100vh - 100px);bottom:76px}#ai-chat-toggle{width:56px;height:56px}}
+            .ai-powered{text-align:center;padding:10px;font-size:11px;color:#94a3b8;background:#f8f9fc}
+            .ai-powered a{color:var(--c-primary);text-decoration:none;font-weight:500}
+            .ai-powered a:hover{text-decoration:underline}
+            @media(max-width:480px){#ai-chat-widget{bottom:16px;${CONFIG.position}:16px}#ai-chat-window{width:calc(100vw - 32px);height:calc(100vh - 100px);bottom:76px}#ai-chat-toggle{width:56px;height:56px}.ai-popup-bubble{bottom:64px}}
         `;
         document.head.appendChild(style);
     }
@@ -117,10 +130,14 @@
                 </div>
                 <div id="ai-chat-messages"></div>
                 <div id="ai-chat-input-area">
-                    <textarea id="ai-chat-input" placeholder="Napište zprávu..." rows="1"></textarea>
+                    <textarea id="ai-chat-input" placeholder="Type a message..." rows="1"></textarea>
                     <button id="ai-chat-send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
                 </div>
-                <div class="ai-powered">Powered by <a href="#">AI</a></div>
+                <div class="ai-powered">Powered by <a href="https://aiserviceboost.com" target="_blank">AI Service Boost</a></div>
+            </div>
+            <div class="ai-popup-bubble">
+                ${CONFIG.popupMessage}
+                <button class="close-popup">×</button>
             </div>
             <button id="ai-chat-toggle">
                 <div class="ai-toggle-icon">
@@ -139,11 +156,39 @@
         const input = widget.querySelector('#ai-chat-input');
         const sendBtn = widget.querySelector('#ai-chat-send');
         const messages = widget.querySelector('#ai-chat-messages');
+        const popupBubble = widget.querySelector('.ai-popup-bubble');
+        const closePopup = widget.querySelector('.close-popup');
 
+        // Toggle chat
         toggle.addEventListener('click', () => {
             isOpen = !isOpen;
             widget.classList.toggle('open', isOpen);
-            if (isOpen) setTimeout(() => input.focus(), 300);
+            if (isOpen) {
+                setTimeout(() => input.focus(), 300);
+                popupBubble.classList.remove('show');
+            }
+        });
+
+        // Close popup
+        closePopup.addEventListener('click', (e) => {
+            e.stopPropagation();
+            popupBubble.classList.remove('show');
+        });
+
+        // Show popup after delay
+        setTimeout(() => {
+            if (!isOpen && !popupShown) {
+                popupBubble.classList.add('show');
+                popupShown = true;
+            }
+        }, CONFIG.popupDelay);
+
+        // Click popup to open chat
+        popupBubble.addEventListener('click', () => {
+            popupBubble.classList.remove('show');
+            isOpen = true;
+            widget.classList.add('open');
+            setTimeout(() => input.focus(), 300);
         });
 
         sendBtn.addEventListener('click', sendMessage);
@@ -216,13 +261,13 @@
                     response = data.response || data.message || data.output || data.text || JSON.stringify(data);
                 } else {
                     await sleep(1500);
-                    response = 'Widget funguje! Nastav data-webhook pro připojení k N8N.';
+                    response = 'Widget is working! Set data-webhook to connect to your AI backend.';
                 }
                 typing.remove();
                 await addMessageStreaming(response);
             } catch (err) {
                 typing.remove();
-                addMessage('Něco se pokazilo. Zkuste to znovu.', 'error');
+                addMessage('Something went wrong. Please try again.', 'error');
             }
 
             isProcessing = false;
