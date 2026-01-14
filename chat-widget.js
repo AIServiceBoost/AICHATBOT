@@ -40,7 +40,7 @@
 
     function injectStyles() {
         const style = document.createElement('style');
-        style.id = 'ai-chat-widget-styles-v5';
+        style.id = 'ai-chat-widget-styles-v6';
         style.textContent = `
             #ai-chat-widget {
                 --c-primary: ${CONFIG.primaryColor};
@@ -345,10 +345,6 @@
                 font-size: 14px;
                 line-height: 1.6;
                 word-wrap: break-word;
-                transition: transform 0.2s ease;
-            }
-            .ai-msg-bubble:hover {
-                transform: scale(1.01);
             }
             .ai-msg-wrap.user .ai-msg-bubble {
                 background: linear-gradient(135deg, var(--c-primary), var(--c-light));
@@ -447,9 +443,10 @@
                 font-family: inherit;
                 line-height: 1.5;
                 max-height: 120px;
-                min-height: 52px;
+                height: 52px;
                 background: #f8f9fc;
                 transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+                overflow: hidden;
             }
             #ai-chat-input:focus {
                 border-color: var(--c-primary);
@@ -458,6 +455,9 @@
             }
             #ai-chat-input::placeholder {
                 color: #94a3b8;
+            }
+            #ai-chat-input.multiline {
+                overflow-y: auto;
             }
             #ai-chat-send {
                 width: 52px;
@@ -508,23 +508,135 @@
                 text-decoration: underline;
             }
             
+            /* Tablet */
+            @media (max-width: 768px) {
+                #ai-chat-widget {
+                    bottom: 20px;
+                    ${CONFIG.position}: 20px;
+                }
+                #ai-chat-window {
+                    width: 380px;
+                    height: 550px;
+                    bottom: 76px;
+                    border-radius: 20px;
+                }
+                #ai-chat-toggle {
+                    width: 60px;
+                    height: 60px;
+                }
+                .ai-popup-bubble {
+                    bottom: 72px;
+                }
+                #ai-chat-header {
+                    padding: 18px;
+                }
+                #ai-chat-messages {
+                    padding: 20px;
+                    gap: 16px;
+                }
+                #ai-chat-input-area {
+                    padding: 16px 20px;
+                }
+            }
+            
+            /* Mobile */
             @media (max-width: 480px) {
                 #ai-chat-widget {
                     bottom: 16px;
                     ${CONFIG.position}: 16px;
                 }
                 #ai-chat-window {
-                    width: calc(100vw - 32px);
-                    height: calc(100vh - 100px);
-                    bottom: 76px;
-                    border-radius: 20px;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 0;
+                    max-height: 100%;
                 }
                 #ai-chat-toggle {
                     width: 56px;
                     height: 56px;
                 }
+                .ai-toggle-icon svg {
+                    width: 24px;
+                    height: 24px;
+                }
                 .ai-popup-bubble {
                     bottom: 68px;
+                    ${CONFIG.position}: 0;
+                    font-size: 14px;
+                    padding: 14px 20px;
+                }
+                #ai-chat-header {
+                    padding: 16px;
+                    border-radius: 0;
+                }
+                .ai-header-avatar {
+                    width: 44px;
+                    height: 44px;
+                    font-size: 22px;
+                }
+                .ai-header-info h3 {
+                    font-size: 16px;
+                }
+                .ai-header-close {
+                    width: 40px;
+                    height: 40px;
+                }
+                #ai-chat-messages {
+                    padding: 16px;
+                    gap: 14px;
+                }
+                .ai-msg-bubble {
+                    max-width: 90%;
+                    padding: 10px 16px;
+                    font-size: 15px;
+                }
+                #ai-chat-input-area {
+                    padding: 14px 16px;
+                    gap: 10px;
+                }
+                #ai-chat-input {
+                    padding: 12px 16px;
+                    font-size: 16px;
+                    height: 48px;
+                }
+                #ai-chat-send {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 14px;
+                }
+                .ai-powered {
+                    padding: 14px 16px;
+                    font-size: 11px;
+                }
+            }
+            
+            /* Small mobile */
+            @media (max-width: 360px) {
+                #ai-chat-header {
+                    padding: 14px;
+                }
+                .ai-header-avatar {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 20px;
+                }
+                .ai-header-content {
+                    gap: 10px;
+                }
+                #ai-chat-messages {
+                    padding: 12px;
+                }
+                .ai-msg-bubble {
+                    padding: 8px 14px;
+                    font-size: 14px;
+                }
+                #ai-chat-input-area {
+                    padding: 12px;
                 }
             }
         `;
@@ -553,7 +665,7 @@
                     <textarea id="ai-chat-input" placeholder="Type a message..." rows="1"></textarea>
                     <button id="ai-chat-send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
                 </div>
-                <div class="ai-powered">Powered by <a href="https://aiserviceboost.com" target="_blank">AI Service Boost</a></div>
+                <div class="ai-powered">⚡ Powered by <a href="https://aiserviceboost.com" target="_blank">AI Service Boost</a></div>
             </div>
             <div class="ai-popup-bubble">
                 ${CONFIG.popupMessage}
@@ -578,6 +690,8 @@
         const messages = widget.querySelector('#ai-chat-messages');
         const popupBubble = widget.querySelector('.ai-popup-bubble');
         const closePopup = widget.querySelector('.close-popup');
+
+        const baseHeight = 52;
 
         function closeChat() {
             isOpen = false;
@@ -605,7 +719,19 @@
         popupBubble.addEventListener('click', openChat);
         sendBtn.addEventListener('click', sendMessage);
         input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-        input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; });
+        
+        // Auto-resize only after 2 lines
+        input.addEventListener('input', () => {
+            input.style.height = baseHeight + 'px';
+            const scrollHeight = input.scrollHeight;
+            
+            if (scrollHeight > baseHeight) {
+                input.style.height = Math.min(scrollHeight, 120) + 'px';
+                input.classList.add('multiline');
+            } else {
+                input.classList.remove('multiline');
+            }
+        });
 
         setTimeout(() => addMessage(CONFIG.welcomeMessage, 'bot'), 500);
 
@@ -659,7 +785,8 @@
             sendBtn.disabled = true;
             addMessage(text, 'user');
             input.value = '';
-            input.style.height = 'auto';
+            input.style.height = baseHeight + 'px';
+            input.classList.remove('multiline');
 
             const typing = showTyping();
 
