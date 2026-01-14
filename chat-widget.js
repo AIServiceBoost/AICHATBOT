@@ -50,11 +50,28 @@
         return div.innerHTML;
     }
     
-    // Convert URLs to clickable links
+    // Convert URLs and markdown links to clickable links
     function linkify(text) {
-        const escaped = escapeHtml(text);
-        const urlRegex = /(https?:\/\/[^\s<]+)/g;
-        return escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+        // Clean up malformed markdown from AI
+        let cleaned = text
+            .replace(/\]?\(_*(?=https?:\/\/)/g, '](')  // Fix ](__http or (__http
+            .replace(/_+\)/g, ')')  // Remove underscores before )
+            .replace(/\)_+\.*/g, ')')  // Remove ).__  or )__. patterns
+            .replace(/__+/g, '')  // Remove any remaining underscores
+            .replace(/\)\.+/g, ')')  // Remove trailing dots after )
+            .trim();
+        
+        const escaped = escapeHtml(cleaned);
+        
+        // Convert markdown links [text](url) to HTML
+        const markdownLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+        let result = escaped.replace(markdownLinkRegex, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        
+        // Convert plain URLs that aren't already in links
+        const plainUrlRegex = /(^|[^"'>])(https?:\/\/[^\s<]+)/g;
+        result = result.replace(plainUrlRegex, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+        
+        return result;
     }
     
     // Calculate realistic typing delay based on text length
