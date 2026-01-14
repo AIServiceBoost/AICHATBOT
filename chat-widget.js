@@ -1,5 +1,30 @@
+/**
+ * AI Service Boost Chat Widget
+ * © 2025 AI Service Boost. All rights reserved.
+ * Unauthorized copying, modification, or distribution is prohibited.
+ * Contact: https://aiserviceboost.com
+ */
 (function() {
     'use strict';
+
+    // Domain whitelist - widget only works on these domains
+    const ALLOWED_DOMAINS = [
+        'aiserviceboost.com',
+        'www.aiserviceboost.com',
+        'localhost',
+        '127.0.0.1'
+        // Add client domains here: 'client-website.com'
+    ];
+
+    const currentDomain = window.location.hostname;
+    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+        currentDomain === domain || currentDomain.endsWith('.' + domain)
+    );
+
+    if (!isAllowed) {
+        console.warn('AI Chat Widget: Domain not authorized. Contact AI Service Boost for access.');
+        return;
+    }
 
     const scriptTag = document.currentScript;
     const CONFIG = {
